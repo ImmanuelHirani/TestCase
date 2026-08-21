@@ -1,0 +1,7 @@
+# Local Claude Code settings -- may contain machine-specific permission
+# grants or command history; never meant to be shared.
+.claude/settings.local.json
+
+# Editor/OS noise
+.DS_Store
+Thumbs.db

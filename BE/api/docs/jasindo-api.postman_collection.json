@@ -1,0 +1,1034 @@
+{
+  "info": {
+    "name": "Jasindo User Management API",
+    "description": "Jasindo user-management API. Runnable top to bottom in one pass -- folders are ordered by what each request needs from the session, and every identifier is captured at run time from an earlier response rather than hard-coded.\n\nSet {{baseUrl}} if the API is not on port 8001.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8001/api/v1"
+    },
+    {
+      "key": "userUuid",
+      "value": ""
+    },
+    {
+      "key": "createdUuid",
+      "value": ""
+    },
+    {
+      "key": "adminUuid",
+      "value": ""
+    },
+    {
+      "key": "etag",
+      "value": ""
+    },
+    {
+      "key": "createdEmail",
+      "value": ""
+    },
+    {
+      "key": "userName",
+      "value": ""
+    },
+    {
+      "key": "userEmail",
+      "value": ""
+    },
+    {
+      "key": "userRole",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Sign in",
+      "description": "Run these first. \"Login (admin)\" puts the HttpOnly session cookie in Postman's cookie jar; every later request rides on it, and there is no token to copy anywhere.",
+      "item": [
+        {
+          "name": "Login (wrong password -> 422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));",
+                  "pm.test('VALIDATION_ERROR envelope', () => pm.expect(pm.response.json().code).to.eql('VALIDATION_ERROR'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@jasindo.test\",\n  \"password\": \"wrong-password\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "",
+                  "// The session cookie is HttpOnly, so Postman stores it in its own cookie",
+                  "// jar automatically -- there is no token to copy into a header anywhere.",
+                  "pm.collectionVariables.set('adminUuid', pm.response.json().user.id);",
+                  "",
+                  "pm.test('the published id is a uuid, not a row number', () => {",
+                  "  pm.expect(pm.response.json().user.id).to.match(/^[0-9a-f]{8}-/i);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@jasindo.test\",\n  \"password\": \"password\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "",
+                  "// Nothing was sent but the cookie, and the server still knows who this is.",
+                  "pm.test('the cookie alone identifies the caller', () => {",
+                  "  pm.expect(pm.response.json().user.id).to.eql(pm.collectionVariables.get('adminUuid'));",
+                  "  pm.expect(pm.response.json().user.role).to.eql('admin');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Users",
+      "description": "The CRUD surface, as an admin. \"List users\" captures a uuid into {{userUuid}} and \"Create user\" captures one into {{createdUuid}}, so nothing below needs an identifier typed in by hand -- which is the point: the API publishes random uuids, so there is no id you could have guessed.",
+      "item": [
+        {
+          "name": "List users",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/users:find",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users:find"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"limit\": 10\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "",
+                  "// Hand the first row's uuid to every later request, so nothing in this",
+                  "// collection needs an identifier typed in by hand.",
+                  "pm.collectionVariables.set('userUuid', json.data[0].id);",
+                  "",
+                  "pm.test('no numeric primary key is published', () => {",
+                  "  json.data.forEach(u => pm.expect(u.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-/i));",
+                  "});",
+                  "",
+                  "// The cursor is handed back verbatim to ask for the next page. Decode it",
+                  "// and it contains only the public uuid -- ordering by the internal key",
+                  "// would have published that key right here, in a value anyone can read.",
+                  "pm.test('the cursor exposes nothing private', () => {",
+                  "  if (!json.page.next_cursor) return;",
+                  "  const decoded = JSON.parse(Buffer.from(json.page.next_cursor, 'base64').toString());",
+                  "  pm.expect(decoded).to.have.property('uuid');",
+                  "  pm.expect(decoded).to.not.have.property('id');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search by name",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/users:search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users:search"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"search\": \"Budi\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "",
+                  "// The term travels in the body, so the URL carries no query string at all",
+                  "// -- nothing to leak into an access log, browser history or a Referer",
+                  "// header. (The path says \"users:search\" because that is the endpoint's",
+                  "// name, which is the point: the intent is legible without any parameters.)",
+                  "pm.test('no query string -- the term is not in the URL', () => {",
+                  "  const url = pm.request.url.toString();",
+                  "  pm.expect(url).to.not.include('?');",
+                  "  pm.expect(url).to.eql(pm.collectionVariables.replaceIn(url));",
+                  "});",
+                  "",
+                  "pm.test('every row matches the term', () => {",
+                  "  const term = JSON.parse(pm.request.body.raw).search.toLowerCase();",
+                  "  pm.response.json().data.forEach(u => {",
+                  "    pm.expect((u.name + u.email).toLowerCase()).to.include(term);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search by ID (uuid prefix)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/users:search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users:search"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"search\": \"{{userUuid}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "The ID a user can actually see is the uuid, so that is what the search box matches. The backend prefix-matches it, which is why pasting only the first block shown in the table column finds the row too."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('finds exactly the row that uuid belongs to', () => {",
+                  "  const ids = pm.response.json().data.map(u => u.id);",
+                  "  pm.expect(ids).to.include(pm.collectionVariables.get('userUuid'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filter by role",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/users:search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users:search"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"admin\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('only the requested role comes back', () => {",
+                  "  const role = JSON.parse(pm.request.body.raw).role;",
+                  "  pm.response.json().data.forEach(u => pm.expect(u.role).to.eql(role));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Show user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('carries an ETag', () => pm.response.to.have.header('ETag'));",
+                  "",
+                  "// Stashed for the If-Match requests further down: this is what lets the",
+                  "// server detect that somebody else changed the row in between.",
+                  "pm.collectionVariables.set('etag', pm.response.headers.get('ETag'));",
+                  "",
+                  "const user = pm.response.json().data;",
+                  "pm.collectionVariables.set('userName', user.name);",
+                  "pm.collectionVariables.set('userEmail', user.email);",
+                  "pm.collectionVariables.set('userRole', user.role);",
+                  "",
+                  "pm.test('the ETag is built from the uuid, not the primary key', () => {",
+                  "  pm.expect(pm.response.headers.get('ETag'))",
+                  "    .to.include(pm.collectionVariables.get('userUuid'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userUuid}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userUuid}}"
+              ]
+            },
+            "description": "The only endpoint with an identifier in the URL, and it is the public uuid. Run \"List users\" first -- it fills {{userUuid}} in for you."
+          }
+        },
+        {
+          "name": "Show user with a malformed id (-> 404)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "999999"
+              ]
+            },
+            "description": "The route key is a uuid column. Without a route constraint this would reach Postgres as \"where uuid = 999999\", which is not a castable uuid literal, and the client would get a 500 for what is plainly a 404. The constraint means the segment never matches the route at all."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404, not 500', () => pm.response.to.have.status(404));",
+                  "pm.test('and still the RFC 9457 envelope', () => {",
+                  "  pm.expect(pm.response.json().code).to.eql('NOT_FOUND');",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create user (admin only)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "const created = pm.response.json().data;",
+                  "pm.collectionVariables.set('createdEmail', created.email);",
+                  "pm.collectionVariables.set('createdUuid', created.id);",
+                  "",
+                  "pm.test('Location header points at the new resource', () => {",
+                  "  pm.expect(pm.response.headers.get('Location')).to.include('/users/' + created.id);",
+                  "});",
+                  "pm.test('the server assigned the uuid; the client never sent one', () => {",
+                  "  pm.expect(created.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4/i);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Siti Rahayu\",\n  \"email\": \"siti+{{$randomInt}}@jasindo.test\",\n  \"password\": \"password123\",\n  \"role\": \"user\",\n  \"department\": \"Underwriting\",\n  \"phone\": \"081234567890\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users:create",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users:create"
+              ]
+            },
+            "description": "The email carries {{$randomInt}} so this can be re-run during a demo without tripping the unique-email rule."
+          }
+        },
+        {
+          "name": "Create user (invalid -> 422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));",
+                  "pm.test('per-field errors', () => pm.expect(pm.response.json().errors).to.have.property('email'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"X\",\n  \"email\": \"not-an-email\",\n  \"password\": \"123\",\n  \"role\": \"superuser\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users:create",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users:create"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update user",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{createdUuid}}\",\n  \"name\": \"Siti Rahayu (renamed)\",\n  \"email\": \"{{createdEmail}}\",\n  \"password\": \"\",\n  \"role\": \"user\",\n  \"department\": \"Klaim\",\n  \"phone\": \"081200000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users:update",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users:update"
+              ]
+            },
+            "description": "The target goes in the body, not the URL -- the request line stays POST /users:update with no identifier in it, and the identifier it does carry is the public uuid. Edits the row \"Create user\" just made, so the collection is safe to re-run."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const updated = pm.response.json().data;",
+                  "",
+                  "pm.test('the uuid is unchanged by an update', () => {",
+                  "  pm.expect(updated.id).to.eql(pm.collectionVariables.get('createdUuid'));",
+                  "});",
+                  "pm.test('the change actually applied', () => {",
+                  "  pm.expect(updated.name).to.eql('Siti Rahayu (renamed)');",
+                  "  pm.expect(updated.department).to.eql('Klaim');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete user",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/users:delete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users:delete"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{createdUuid}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Deletes whatever \"Create user (admin only)\" produced, so the collection can be run end to end repeatedly without eating the seed data."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('echoes back which row went, by uuid', () => {",
+                  "  pm.expect(pm.response.json().data.id)",
+                  "    .to.eql(pm.collectionVariables.get('createdUuid'));",
+                  "  pm.expect(pm.response.json().data.deleted).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. API standards",
+      "description": "The cross-cutting behaviour: RFC 9457 problem bodies, rejection of unknown parameters, and ETag / If-Match optimistic concurrency.",
+      "item": [
+        {
+          "name": "RFC 9457 shape on any error",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('application/problem+json', () => pm.response.to.have.header('Content-Type', 'application/problem+json'));",
+                  "const body = pm.response.json();",
+                  "pm.test('has type/title/status/detail/instance', () => {",
+                  "  ['type', 'title', 'status', 'detail', 'instance', 'code'].forEach(k => pm.expect(body).to.have.property(k));",
+                  "});",
+                  "pm.test('status field matches the actual HTTP status', () => pm.expect(body.status).to.eql(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/users:find",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users:find"
+              ]
+            },
+            "description": "Deliberately invalid (limit exceeds the cap) so it errors regardless of session state -- 422 when signed in, 401 when not. Either way the body is an RFC 9457 Problem Details object, which is what the assertions below check.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"limit\": 5000\n}"
+            }
+          }
+        },
+        {
+          "name": "Unknown endpoint (-> 404 JSON envelope)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));",
+                  "pm.test('JSON not HTML', () => pm.expect(pm.response.json().code).to.eql('NOT_FOUND'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/no-such-endpoint",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "no-such-endpoint"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Unknown query parameter (-> 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('UNSUPPORTED_PARAMETER', () => pm.expect(pm.response.json().code).to.eql('UNSUPPORTED_PARAMETER'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/users:find",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users:find"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sroted\": \"name\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update with stale If-Match (-> 412)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('412', () => pm.response.to.have.status(412));",
+                  "pm.test('PRECONDITION_FAILED', () => pm.expect(pm.response.json().code).to.eql('PRECONDITION_FAILED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "If-Match",
+                "value": "W/\"1-1\"",
+                "description": "deliberately stale -- run 'Show user' first to see a real ETag by comparison"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{userUuid}}\",\n  \"name\": \"Should Not Apply\",\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"\",\n  \"role\": \"{{userRole}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users:update",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users:update"
+              ]
+            },
+            "description": "Presents an ETag that is not this row's current version. The server refuses the write rather than silently clobbering whatever changed underneath it -- and the name in this body is never applied, which the next request proves."
+          }
+        },
+        {
+          "name": "Update with current If-Match (-> 200)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "If-Match",
+                "value": "{{etag}}",
+                "description": "Run 'Show user' first to populate {{etag}}."
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{userUuid}}\",\n  \"name\": \"{{userName}}\",\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"\",\n  \"role\": \"{{userRole}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users:update",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users:update"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "",
+                  "// Byte-for-byte the same request as the 412 above apart from the ETag it",
+                  "// presents. That is the whole mechanism: the server is not trusting the",
+                  "// client to have read the row, it is checking *which version* it read.",
+                  "pm.test('the accepted write carries the row version back', () => {",
+                  "  const etag = pm.response.headers.get('ETag');",
+                  "  pm.expect(etag).to.be.a('string');",
+                  "  pm.expect(etag).to.include(pm.collectionVariables.get('userUuid'));",
+                  "});",
+                  "",
+                  "pm.test('the rejected 412 really did not apply', () => {",
+                  "  pm.expect(pm.response.json().data.name)",
+                  "    .to.eql(pm.collectionVariables.get('userName'))",
+                  "    .and.to.not.eql('Should Not Apply');",
+                  "});",
+                  "",
+                  "// This body restores the row's own values, so Eloquent finds nothing dirty",
+                  "// and leaves updated_at alone -- which is why the version is unchanged. A",
+                  "// write that alters something does move it; \"Update user\" above shows that.",
+                  "pm.test('a no-op write does not invent a new version', () => {",
+                  "  pm.expect(pm.response.headers.get('ETag'))",
+                  "    .to.eql(pm.collectionVariables.get('etag'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Role and session (run last)",
+      "description": "These end the admin session on purpose, so they come last. \"Login (non-admin)\" replaces the cookie with a plain user's, which is what makes the 403 real rather than staged. The rate-limit request burns the login throttle (5/min) -- wait a minute before running the collection again.",
+      "item": [
+        {
+          "name": "Login (non-admin)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@jasindo.test\",\n  \"password\": \"password\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "login"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "",
+                  "// Replaces the admin cookie with a plain user's. Everything after this",
+                  "// runs as that user, which is what makes the next 403 real rather than staged.",
+                  "pm.test('signed in as a non-admin', () => {",
+                  "  pm.expect(pm.response.json().user.role).to.eql('user');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create user as non-admin (-> 403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403', () => pm.response.to.have.status(403));",
+                  "pm.test('FORBIDDEN envelope', () => pm.expect(pm.response.json().code).to.eql('FORBIDDEN'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Should Not Exist\",\n  \"email\": \"nope@jasindo.test\",\n  \"password\": \"password123\",\n  \"role\": \"user\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users:create",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users:create"
+              ]
+            },
+            "description": "Run 'Login (non-admin)' first. Proves the role middleware guards the write endpoints."
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "",
+                  "// The server clears the cookie by sending back an already-expired one.",
+                  "// The client could not have done it: the cookie is HttpOnly, so JavaScript",
+                  "// never had a handle on it in the first place.",
+                  "pm.test('the server expires the session cookie', () => {",
+                  "  const setCookie = pm.response.headers.get('Set-Cookie') || '';",
+                  "  pm.expect(setCookie).to.include('jasindo_token');",
+                  "  pm.expect(setCookie.toLowerCase()).to.include('expires');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login rate limit (-> 429 with Retry-After)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 429) {",
+                  "  pm.test('Retry-After header present', () => pm.response.to.have.header('Retry-After'));",
+                  "  pm.test('X-RateLimit-Limit header present', () => pm.response.to.have.header('X-RateLimit-Limit'));",
+                  "} else {",
+                  "  pm.test('pre-429 attempts return 422', () => pm.response.to.have.status(422));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nobody@jasindo.test\",\n  \"password\": \"wrong\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "login"
+              ]
+            },
+            "description": "Run this 6 times in a row (Postman Runner, 6 iterations) -- the 6th shows Retry-After."
+          }
+        }
+      ]
+    }
+  ]
+}

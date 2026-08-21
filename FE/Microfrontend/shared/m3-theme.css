@@ -1,0 +1,554 @@
+/*
+ * Material Design 3 design system.
+ *
+ * This file is the single source of truth for the app's visual language.
+ * Colour roles come from m3-color.css (generated from a brand seed via
+ * Google's material-color-utilities); everything else is the M3 spec's
+ * baseline scales, transcribed as tokens.
+ *
+ * Every app in the workspace imports this after `@import 'tailwindcss'`, so
+ * Tailwind utilities resolve to M3 roles rather than to Tailwind's own palette.
+ */
+
+@import './m3-color.css';
+
+/*
+ * The shared UI components live in this package, which each app consumes as a
+ * symlinked workspace dependency under node_modules -- and Tailwind skips
+ * node_modules when scanning for classes. Without this, any utility used only
+ * by a shared component (w-full, min-h-14, ...) is silently never generated.
+ */
+@source './src';
+
+/* ------------------------------------------------------------------------
+ * Reference tokens — the M3 baseline scales
+ * --------------------------------------------------------------------- */
+
+:root {
+  /* Typescale — 15 baseline styles.
+     Sizes are rem (spec: sp / 16). Weights: 400 regular, 500 medium. */
+  --md-sys-typescale-display-large-size: 3.5625rem;      /* 57sp */
+  --md-sys-typescale-display-large-line-height: 4rem;    /* 64 */
+  --md-sys-typescale-display-large-tracking: -0.015625rem;
+  --md-sys-typescale-display-medium-size: 2.8125rem;     /* 45 */
+  --md-sys-typescale-display-medium-line-height: 3.25rem;
+  --md-sys-typescale-display-small-size: 2.25rem;        /* 36 */
+  --md-sys-typescale-display-small-line-height: 2.75rem;
+
+  --md-sys-typescale-headline-large-size: 2rem;          /* 32 */
+  --md-sys-typescale-headline-large-line-height: 2.5rem;
+  --md-sys-typescale-headline-medium-size: 1.75rem;      /* 28 */
+  --md-sys-typescale-headline-medium-line-height: 2.25rem;
+  --md-sys-typescale-headline-small-size: 1.5rem;        /* 24 */
+  --md-sys-typescale-headline-small-line-height: 2rem;
+
+  --md-sys-typescale-title-large-size: 1.375rem;         /* 22 */
+  --md-sys-typescale-title-large-line-height: 1.75rem;
+  --md-sys-typescale-title-medium-size: 1rem;            /* 16 */
+  --md-sys-typescale-title-medium-line-height: 1.5rem;
+  --md-sys-typescale-title-medium-tracking: 0.009375rem;
+  --md-sys-typescale-title-small-size: 0.875rem;         /* 14 */
+  --md-sys-typescale-title-small-line-height: 1.25rem;
+  --md-sys-typescale-title-small-tracking: 0.00625rem;
+
+  --md-sys-typescale-body-large-size: 1rem;              /* 16 */
+  --md-sys-typescale-body-large-line-height: 1.5rem;
+  --md-sys-typescale-body-large-tracking: 0.03125rem;
+  --md-sys-typescale-body-medium-size: 0.875rem;         /* 14 */
+  --md-sys-typescale-body-medium-line-height: 1.25rem;
+  --md-sys-typescale-body-medium-tracking: 0.015625rem;
+  --md-sys-typescale-body-small-size: 0.75rem;           /* 12 */
+  --md-sys-typescale-body-small-line-height: 1rem;
+  --md-sys-typescale-body-small-tracking: 0.025rem;
+
+  --md-sys-typescale-label-large-size: 0.875rem;         /* 14 */
+  --md-sys-typescale-label-large-line-height: 1.25rem;
+  --md-sys-typescale-label-large-tracking: 0.00625rem;
+  --md-sys-typescale-label-medium-size: 0.75rem;         /* 12 */
+  --md-sys-typescale-label-medium-line-height: 1rem;
+  --md-sys-typescale-label-medium-tracking: 0.03125rem;
+  --md-sys-typescale-label-small-size: 0.6875rem;        /* 11 */
+  --md-sys-typescale-label-small-line-height: 1rem;
+  --md-sys-typescale-label-small-tracking: 0.03125rem;
+
+  /* Shape — the 10-step corner radius scale. */
+  --md-sys-shape-corner-none: 0px;
+  --md-sys-shape-corner-extra-small: 4px;
+  --md-sys-shape-corner-small: 8px;
+  --md-sys-shape-corner-medium: 12px;
+  --md-sys-shape-corner-large: 16px;
+  --md-sys-shape-corner-large-increased: 20px;
+  --md-sys-shape-corner-extra-large: 28px;
+  --md-sys-shape-corner-extra-large-increased: 32px;
+  --md-sys-shape-corner-extra-extra-large: 48px;
+  --md-sys-shape-corner-full: 9999px;
+
+  /* Elevation — 6 levels in dp. M3 prefers tonal surfaces over shadows,
+     so shadows here are deliberately restrained. */
+  --md-sys-elevation-level0: none;
+  --md-sys-elevation-level1: 0 1px 2px 0 rgb(0 0 0 / 0.30), 0 1px 3px 1px rgb(0 0 0 / 0.15);
+  --md-sys-elevation-level2: 0 1px 2px 0 rgb(0 0 0 / 0.30), 0 2px 6px 2px rgb(0 0 0 / 0.15);
+  --md-sys-elevation-level3: 0 4px 8px 3px rgb(0 0 0 / 0.15), 0 1px 3px 0 rgb(0 0 0 / 0.30);
+  --md-sys-elevation-level4: 0 6px 10px 4px rgb(0 0 0 / 0.15), 0 2px 3px 0 rgb(0 0 0 / 0.30);
+  --md-sys-elevation-level5: 0 8px 12px 6px rgb(0 0 0 / 0.15), 0 4px 4px 0 rgb(0 0 0 / 0.30);
+
+  /* State layer opacities. A state layer is an overlay in the *content*
+     colour, laid between the container and the content. */
+  --md-sys-state-hover-opacity: 0.08;
+  --md-sys-state-focus-opacity: 0.10;
+  --md-sys-state-pressed-opacity: 0.10;
+  --md-sys-state-dragged-opacity: 0.16;
+
+  /* Motion — the expressive easing set. */
+  --md-sys-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-easing-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --md-sys-motion-easing-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --md-sys-motion-duration-short4: 200ms;
+  --md-sys-motion-duration-medium2: 300ms;
+  --md-sys-motion-duration-long2: 500ms;
+
+  /* Typeface. M3 splits brand (display/headline) from plain (body/label);
+     Roboto is the default for both. */
+  --md-ref-typeface-brand: 'Roboto', system-ui, sans-serif;
+  --md-ref-typeface-plain: 'Roboto', system-ui, sans-serif;
+}
+
+/* ------------------------------------------------------------------------
+ * Tailwind bridge
+ *
+ * `@theme inline` keeps the var() reference intact rather than inlining the
+ * computed value, so `bg-primary` follows the light/dark override above
+ * instead of freezing whatever the value was at build time.
+ * --------------------------------------------------------------------- */
+
+@theme inline {
+  --color-primary: var(--md-sys-color-primary);
+  --color-on-primary: var(--md-sys-color-on-primary);
+  --color-primary-container: var(--md-sys-color-primary-container);
+  --color-on-primary-container: var(--md-sys-color-on-primary-container);
+
+  --color-secondary: var(--md-sys-color-secondary);
+  --color-on-secondary: var(--md-sys-color-on-secondary);
+  --color-secondary-container: var(--md-sys-color-secondary-container);
+  --color-on-secondary-container: var(--md-sys-color-on-secondary-container);
+
+  --color-tertiary: var(--md-sys-color-tertiary);
+  --color-on-tertiary: var(--md-sys-color-on-tertiary);
+  --color-tertiary-container: var(--md-sys-color-tertiary-container);
+  --color-on-tertiary-container: var(--md-sys-color-on-tertiary-container);
+
+  --color-error: var(--md-sys-color-error);
+  --color-on-error: var(--md-sys-color-on-error);
+  --color-error-container: var(--md-sys-color-error-container);
+  --color-on-error-container: var(--md-sys-color-on-error-container);
+
+  --color-surface: var(--md-sys-color-surface);
+  --color-on-surface: var(--md-sys-color-on-surface);
+  --color-surface-variant: var(--md-sys-color-surface-variant);
+  --color-on-surface-variant: var(--md-sys-color-on-surface-variant);
+  --color-surface-dim: var(--md-sys-color-surface-dim);
+  --color-surface-bright: var(--md-sys-color-surface-bright);
+  --color-surface-container-lowest: var(--md-sys-color-surface-container-lowest);
+  --color-surface-container-low: var(--md-sys-color-surface-container-low);
+  --color-surface-container: var(--md-sys-color-surface-container);
+  --color-surface-container-high: var(--md-sys-color-surface-container-high);
+  --color-surface-container-highest: var(--md-sys-color-surface-container-highest);
+
+  --color-outline: var(--md-sys-color-outline);
+  --color-outline-variant: var(--md-sys-color-outline-variant);
+
+  --color-inverse-surface: var(--md-sys-color-inverse-surface);
+  --color-inverse-on-surface: var(--md-sys-color-inverse-on-surface);
+  --color-inverse-primary: var(--md-sys-color-inverse-primary);
+  --color-scrim: var(--md-sys-color-scrim);
+
+  --radius-xs: var(--md-sys-shape-corner-extra-small);
+  --radius-sm: var(--md-sys-shape-corner-small);
+  --radius-md: var(--md-sys-shape-corner-medium);
+  --radius-lg: var(--md-sys-shape-corner-large);
+  --radius-xl: var(--md-sys-shape-corner-extra-large);
+  --radius-full: var(--md-sys-shape-corner-full);
+
+  --shadow-level1: var(--md-sys-elevation-level1);
+  --shadow-level2: var(--md-sys-elevation-level2);
+  --shadow-level3: var(--md-sys-elevation-level3);
+  --shadow-level4: var(--md-sys-elevation-level4);
+  --shadow-level5: var(--md-sys-elevation-level5);
+
+  --font-sans: var(--md-ref-typeface-plain);
+  --font-brand: var(--md-ref-typeface-brand);
+
+  --ease-standard: var(--md-sys-motion-easing-standard);
+  --ease-emphasized: var(--md-sys-motion-easing-emphasized);
+
+}
+
+/*
+ * M3 breakpoints, which are not Tailwind's defaults. Tailwind ships
+ * 640/768/1024/1280/1536; M3 specifies 600/840/1200/1600 and names them.
+ * Using the M3 names keeps the code honest about which spec rule applies --
+ * e.g. "navigation bar below medium, rail from medium up".
+ *
+ * These need a plain @theme block, not the `@theme inline` one above:
+ * a breakpoint has to resolve to a literal length when the media queries are
+ * generated, and `inline` leaves it as a var() reference that the generator
+ * cannot read -- the variants then silently never get emitted.
+ */
+@theme {
+  --breakpoint-medium: 37.5rem;   /* 600px  — tablet portrait */
+  --breakpoint-expanded: 52.5rem; /* 840px  — tablet landscape, desktop */
+  --breakpoint-large: 75rem;      /* 1200px — desktop */
+  --breakpoint-xlarge: 100rem;    /* 1600px — ultra-wide */
+}
+
+/* ------------------------------------------------------------------------
+ * Typescale utilities
+ *
+ * One class per style, so components name the M3 style they mean
+ * (`md-title-large`) instead of restating size/weight/tracking each time.
+ * --------------------------------------------------------------------- */
+
+@layer components {
+  .md-display-large {
+    font-family: var(--md-ref-typeface-brand);
+    font-size: var(--md-sys-typescale-display-large-size);
+    line-height: var(--md-sys-typescale-display-large-line-height);
+    letter-spacing: var(--md-sys-typescale-display-large-tracking);
+    font-weight: 400;
+  }
+  .md-display-medium {
+    font-family: var(--md-ref-typeface-brand);
+    font-size: var(--md-sys-typescale-display-medium-size);
+    line-height: var(--md-sys-typescale-display-medium-line-height);
+    font-weight: 400;
+  }
+  .md-display-small {
+    font-family: var(--md-ref-typeface-brand);
+    font-size: var(--md-sys-typescale-display-small-size);
+    line-height: var(--md-sys-typescale-display-small-line-height);
+    font-weight: 400;
+  }
+
+  .md-headline-large {
+    font-family: var(--md-ref-typeface-brand);
+    font-size: var(--md-sys-typescale-headline-large-size);
+    line-height: var(--md-sys-typescale-headline-large-line-height);
+    font-weight: 400;
+  }
+  .md-headline-medium {
+    font-family: var(--md-ref-typeface-brand);
+    font-size: var(--md-sys-typescale-headline-medium-size);
+    line-height: var(--md-sys-typescale-headline-medium-line-height);
+    font-weight: 400;
+  }
+  .md-headline-small {
+    font-family: var(--md-ref-typeface-brand);
+    font-size: var(--md-sys-typescale-headline-small-size);
+    line-height: var(--md-sys-typescale-headline-small-line-height);
+    font-weight: 400;
+  }
+
+  .md-title-large {
+    font-family: var(--md-ref-typeface-brand);
+    font-size: var(--md-sys-typescale-title-large-size);
+    line-height: var(--md-sys-typescale-title-large-line-height);
+    font-weight: 400;
+  }
+  .md-title-medium {
+    font-family: var(--md-ref-typeface-plain);
+    font-size: var(--md-sys-typescale-title-medium-size);
+    line-height: var(--md-sys-typescale-title-medium-line-height);
+    letter-spacing: var(--md-sys-typescale-title-medium-tracking);
+    font-weight: 500;
+  }
+  .md-title-small {
+    font-family: var(--md-ref-typeface-plain);
+    font-size: var(--md-sys-typescale-title-small-size);
+    line-height: var(--md-sys-typescale-title-small-line-height);
+    letter-spacing: var(--md-sys-typescale-title-small-tracking);
+    font-weight: 500;
+  }
+
+  .md-body-large {
+    font-family: var(--md-ref-typeface-plain);
+    font-size: var(--md-sys-typescale-body-large-size);
+    line-height: var(--md-sys-typescale-body-large-line-height);
+    letter-spacing: var(--md-sys-typescale-body-large-tracking);
+    font-weight: 400;
+  }
+  .md-body-medium {
+    font-family: var(--md-ref-typeface-plain);
+    font-size: var(--md-sys-typescale-body-medium-size);
+    line-height: var(--md-sys-typescale-body-medium-line-height);
+    letter-spacing: var(--md-sys-typescale-body-medium-tracking);
+    font-weight: 400;
+  }
+  .md-body-small {
+    font-family: var(--md-ref-typeface-plain);
+    font-size: var(--md-sys-typescale-body-small-size);
+    line-height: var(--md-sys-typescale-body-small-line-height);
+    letter-spacing: var(--md-sys-typescale-body-small-tracking);
+    font-weight: 400;
+  }
+
+  .md-label-large {
+    font-family: var(--md-ref-typeface-plain);
+    font-size: var(--md-sys-typescale-label-large-size);
+    line-height: var(--md-sys-typescale-label-large-line-height);
+    letter-spacing: var(--md-sys-typescale-label-large-tracking);
+    font-weight: 500;
+  }
+  .md-label-medium {
+    font-family: var(--md-ref-typeface-plain);
+    font-size: var(--md-sys-typescale-label-medium-size);
+    line-height: var(--md-sys-typescale-label-medium-line-height);
+    letter-spacing: var(--md-sys-typescale-label-medium-tracking);
+    font-weight: 500;
+  }
+  .md-label-small {
+    font-family: var(--md-ref-typeface-plain);
+    font-size: var(--md-sys-typescale-label-small-size);
+    line-height: var(--md-sys-typescale-label-small-line-height);
+    letter-spacing: var(--md-sys-typescale-label-small-tracking);
+    font-weight: 500;
+  }
+
+  /*
+   * Text field.
+   *
+   * The label is the whole point of this living in CSS rather than in utility
+   * classes: M3 requires it to sit *centred* in an empty, unfocused field and
+   * animate to the top on focus or once populated. That is a state transition
+   * across four properties, driven by :focus and :placeholder-shown on a
+   * sibling -- not something a utility class can express.
+   *
+   * The control must precede the label in the DOM for the ~ selector to work,
+   * and it needs placeholder=" " so :placeholder-shown reports emptiness.
+   */
+  .m3-field {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 3.5rem; /* 56dp */
+    padding-inline: 1rem;
+    background-color: var(--md-sys-color-surface-container-highest);
+    border-top-left-radius: var(--md-sys-shape-corner-extra-small);
+    border-top-right-radius: var(--md-sys-shape-corner-extra-small);
+    transition: background-color var(--md-sys-motion-duration-short4)
+      var(--md-sys-motion-easing-standard);
+  }
+
+  .m3-field:hover {
+    background-color: color-mix(
+      in srgb,
+      var(--md-sys-color-on-surface) 8%,
+      var(--md-sys-color-surface-container-highest)
+    );
+  }
+
+  .m3-field__body {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .m3-field__control {
+    display: block;
+    width: 100%;
+    height: 3.5rem;
+    padding-top: 1.5rem;
+    padding-bottom: 0.5rem;
+    background: transparent;
+    border: 0;
+    outline: 0;
+    color: var(--md-sys-color-on-surface);
+    font-family: var(--md-ref-typeface-plain);
+    font-size: var(--md-sys-typescale-body-large-size);
+    line-height: var(--md-sys-typescale-body-large-line-height);
+    letter-spacing: var(--md-sys-typescale-body-large-tracking);
+  }
+
+  /* Chrome renders a native clear affordance on search inputs; M3 supplies
+     its own trailing clear icon, so the two would sit side by side. */
+  .m3-field__control::-webkit-search-cancel-button {
+    display: none;
+  }
+
+  .m3-field__label {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    pointer-events: none;
+    white-space: nowrap;
+    color: var(--md-sys-color-on-surface-variant);
+    font-family: var(--md-ref-typeface-plain);
+    font-size: var(--md-sys-typescale-body-large-size);
+    line-height: var(--md-sys-typescale-body-large-line-height);
+    transition:
+      top var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard),
+      transform var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard),
+      font-size var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard),
+      color var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+  }
+
+  /* Floated: focused, populated, or a control that is always populated
+     (a select) and so opts in explicitly. */
+  /* Focus is read from the container's :focus-within rather than :focus on
+     the control: it survives the control delegating focus to a child, and it
+     keeps the label, the indicator and the container reacting off one signal. */
+  .m3-field:focus-within .m3-field__label,
+  .m3-field__control:not(:placeholder-shown) ~ .m3-field__label,
+  .m3-field--floating .m3-field__label {
+    top: 0.5rem;
+    transform: none;
+    font-size: var(--md-sys-typescale-body-small-size);
+    line-height: var(--md-sys-typescale-body-small-line-height);
+  }
+
+  .m3-field:focus-within .m3-field__label {
+    color: var(--md-sys-color-primary);
+  }
+
+  .m3-field--error .m3-field__label,
+  .m3-field--error:focus-within .m3-field__label {
+    color: var(--md-sys-color-error);
+  }
+
+  .m3-field--disabled {
+    opacity: 0.38;
+  }
+
+  /*
+   * Active indicator. Two stacked rules rather than a border, so the focused
+   * 2dp state grows out of the resting 1dp line instead of nudging the
+   * field's height by a pixel.
+   */
+  .m3-field__indicator,
+  .m3-field__indicator-active {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    pointer-events: none;
+  }
+
+  .m3-field__indicator {
+    height: 1px;
+    background-color: var(--md-sys-color-outline);
+  }
+
+  .m3-field__indicator-active {
+    height: 2px;
+    background-color: var(--md-sys-color-primary);
+    transform: scaleX(0);
+    transition: transform var(--md-sys-motion-duration-short4)
+      var(--md-sys-motion-easing-standard);
+  }
+
+  .m3-field:focus-within .m3-field__indicator-active {
+    transform: scaleX(1);
+  }
+
+  .m3-field--error .m3-field__indicator,
+  .m3-field--error .m3-field__indicator-active {
+    background-color: var(--md-sys-color-error);
+  }
+
+  /*
+   * Adaptive navigation slots.
+   *
+   * These exist as their own classes rather than as `hidden medium:block`
+   * because a microfrontend page carries *two* Tailwind builds -- the host's
+   * and each remote's. Both emit a plain `.hidden { display: none }`, and the
+   * remote's stylesheet is injected after the host's, so a bare `.hidden` from
+   * the remote outranks the host's `@media ... .medium\:block` and the sidebar
+   * silently never appears.
+   *
+   * Defining the switch once here sidesteps the cascade race entirely: both
+   * stylesheets contain the identical rule, so whichever wins is the same.
+   *
+   * M3 rule being encoded: navigation bar below the medium breakpoint (600dp),
+   * navigation rail from medium up. The two are never visible together.
+   */
+  .m3-rail-slot {
+    display: none;
+  }
+  .m3-bar-slot {
+    display: flex;
+  }
+  @media (width >= 37.5rem) {
+    .m3-rail-slot {
+      display: block;
+    }
+    .m3-bar-slot {
+      display: none;
+    }
+  }
+
+  /*
+   * State layer.
+   *
+   * M3 states are not colour swaps -- they are a translucent overlay in the
+   * content colour, sitting between container and content, at a fixed opacity
+   * per state (hover 8%, focus/press 10%, drag 16%).
+   *
+   * Put `.md-state-layer` on a positioned element and set --md-state-color to
+   * the element's own content colour.
+   */
+  .md-state-layer {
+    position: relative;
+    isolation: isolate;
+  }
+  .md-state-layer::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background-color: var(--md-state-color, currentColor);
+    opacity: 0;
+    transition: opacity var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+    pointer-events: none;
+    z-index: -1;
+  }
+  .md-state-layer:hover::before {
+    opacity: var(--md-sys-state-hover-opacity);
+  }
+  .md-state-layer:focus-visible::before {
+    opacity: var(--md-sys-state-focus-opacity);
+  }
+  .md-state-layer:active::before {
+    opacity: var(--md-sys-state-pressed-opacity);
+  }
+  .md-state-layer:disabled::before,
+  .md-state-layer[aria-disabled='true']::before {
+    opacity: 0;
+  }
+}
+
+/* ------------------------------------------------------------------------
+ * Base
+ * --------------------------------------------------------------------- */
+
+@layer base {
+  html {
+    /* M3 focus indicators are drawn by the state layer plus an outline;
+       the browser default ring would double up on it. */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--md-sys-color-surface);
+    color: var(--md-sys-color-on-surface);
+    font-family: var(--md-ref-typeface-plain);
+    font-size: var(--md-sys-typescale-body-medium-size);
+    line-height: var(--md-sys-typescale-body-medium-line-height);
+    letter-spacing: var(--md-sys-typescale-body-medium-tracking);
+  }
+
+  /* M3 disabled treatment: 38% opacity on content, 12% on containers. */
+  :disabled {
+    cursor: not-allowed;
+  }
+}

@@ -1,0 +1,548 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Jasindo User Management API",
+        "description": "CRUD API for the Jasindo front end coding test. Auth via a JWT carried in an HttpOnly, SameSite=Lax cookie -- Swagger's \"Try it out\" cannot authenticate directly because the cookie is invisible to JavaScript by design; log in from the app itself, then Swagger inherits the cookie on same-origin requests.",
+        "version": "2.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8001/api/v1",
+            "description": "Local development"
+        }
+    ],
+    "paths": {
+        "/login": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Exchange credentials for a session cookie",
+                "operationId": "67d6d0fdd54fba132e1b6f55ca254183",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "admin@jasindo.test"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "password"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Authenticated. Sets the jasindo_token HttpOnly cookie."
+                    },
+                    "422": {
+                        "description": "Invalid credentials or missing fields"
+                    },
+                    "429": {
+                        "description": "Too many login attempts"
+                    }
+                }
+            }
+        },
+        "/logout": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Clear the session cookie",
+                "operationId": "28d48c13fca984400ac8de99f54ee13a",
+                "responses": {
+                    "200": {
+                        "description": "Cookie cleared"
+                    },
+                    "401": {
+                        "description": "Not authenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ]
+            }
+        },
+        "/me": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Current authenticated user, and silently renews the session",
+                "operationId": "bc2032a379aa97707ccc61511897c120",
+                "responses": {
+                    "200": {
+                        "description": "The authenticated user"
+                    },
+                    "401": {
+                        "description": "Not authenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ]
+            }
+        },
+        "/stats": {
+            "get": {
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Aggregate user statistics for the dashboard",
+                "operationId": "650f9464b8366de5a021b51ca3a48123",
+                "responses": {
+                    "200": {
+                        "description": "Totals, role split, department breakdown and the newest users"
+                    },
+                    "401": {
+                        "description": "Not authenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ]
+            }
+        },
+        "/users:find": {
+            "post": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Browse users (cursor-paginated, unfiltered)",
+                "description": "Plain listing. Parameters go in the JSON body, not the URL. Accepts paging and sorting only -- passing `search` or `role` here is rejected with 400; use /users:search for those.",
+                "operationId": "20f66dbdb78d91895fd8e27574098a36",
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "limit": {
+                                        "type": "integer",
+                                        "default": 10,
+                                        "maximum": 100
+                                    },
+                                    "cursor": {
+                                        "description": "Opaque cursor from a previous response's page.next_cursor. Do not construct or parse.",
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "sort": {
+                                        "description": "Omit for the server's default ordering. `id` is deliberately not sortable: the published id is a random uuid, so ordering by it would sort rows by nothing a reader can see.",
+                                        "type": "string",
+                                        "nullable": true,
+                                        "enum": [
+                                            "name",
+                                            "email",
+                                            "department",
+                                            "role",
+                                            "created_at"
+                                        ]
+                                    },
+                                    "direction": {
+                                        "type": "string",
+                                        "default": "asc",
+                                        "enum": [
+                                            "asc",
+                                            "desc"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "A cursor page of users, with the caller's field policy"
+                    },
+                    "400": {
+                        "description": "An unsupported body field was supplied"
+                    },
+                    "401": {
+                        "description": "Not authenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ]
+            }
+        },
+        "/users:search": {
+            "post": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Search and filter users (cursor-paginated)",
+                "description": "Same page shape as :find, plus the `search` term and `role` filter. Criteria go in the JSON body so they never land in a URL, an access log or browser history.",
+                "operationId": "e0d74314433fd184d19434805ff045f2",
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "search": {
+                                        "description": "Matches name or email (case-insensitive, partial), or the leading characters of a user UUID",
+                                        "type": "string",
+                                        "example": "budi",
+                                        "nullable": true
+                                    },
+                                    "role": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "enum": [
+                                            "admin",
+                                            "user"
+                                        ]
+                                    },
+                                    "limit": {
+                                        "type": "integer",
+                                        "default": 10,
+                                        "maximum": 100
+                                    },
+                                    "cursor": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "sort": {
+                                        "description": "Omit for the server's default ordering. `id` is deliberately not sortable: the published id is a random uuid, so ordering by it would sort rows by nothing a reader can see.",
+                                        "type": "string",
+                                        "nullable": true,
+                                        "enum": [
+                                            "name",
+                                            "email",
+                                            "department",
+                                            "role",
+                                            "created_at"
+                                        ]
+                                    },
+                                    "direction": {
+                                        "type": "string",
+                                        "default": "asc",
+                                        "enum": [
+                                            "asc",
+                                            "desc"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "A cursor page of matching users"
+                    },
+                    "400": {
+                        "description": "An unsupported body field was supplied"
+                    },
+                    "401": {
+                        "description": "Not authenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ]
+            }
+        },
+        "/users/{id}": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Fetch a single user",
+                "description": "Standard REST read, deliberately not a custom method. Carries an ETag for use as If-Match on a later update.",
+                "operationId": "6946bbab7898f59a09e3c8e529a38907",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The public UUID from the `id` field of a find/search result. The internal primary key is not accepted here and is never published.",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The user, plus the caller's field policy"
+                    },
+                    "404": {
+                        "description": "No user with that ID"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ]
+            }
+        },
+        "/users:create": {
+            "post": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Create a user (admin only)",
+                "operationId": "7d2c8e401850915733f88609edf5b31e",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "password",
+                                    "role"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Siti Rahayu"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "siti@jasindo.test"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "minLength": 8
+                                    },
+                                    "role": {
+                                        "type": "string",
+                                        "enum": [
+                                            "admin",
+                                            "user"
+                                        ]
+                                    },
+                                    "department": {
+                                        "type": "string",
+                                        "example": "Underwriting",
+                                        "nullable": true
+                                    },
+                                    "phone": {
+                                        "type": "string",
+                                        "example": "081234567890",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created. Location header points at the new resource."
+                    },
+                    "403": {
+                        "description": "Caller is not an admin"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ]
+            }
+        },
+        "/users:update": {
+            "post": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Update a user (admin only)",
+                "description": "The target `id` travels in the body, not the URL, so no record identifier is exposed in the request line. Optionally send If-Match with the ETag from a prior read: a mismatch means someone else changed the record first and returns 412 instead of silently overwriting their change.",
+                "operationId": "3a137c97414bb46a809077f162aec10a",
+                "parameters": [
+                    {
+                        "name": "If-Match",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "id",
+                                    "name",
+                                    "email",
+                                    "role"
+                                ],
+                                "properties": {
+                                    "id": {
+                                        "description": "The target user's public UUID.",
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "example": "8f14e45f-ceea-4d4b-9d2e-3b7a1c05f9a2"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Siti Rahayu"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "password": {
+                                        "description": "Blank or omitted keeps the current password.",
+                                        "type": "string",
+                                        "format": "password",
+                                        "nullable": true
+                                    },
+                                    "role": {
+                                        "type": "string",
+                                        "enum": [
+                                            "admin",
+                                            "user"
+                                        ]
+                                    },
+                                    "department": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "phone": {
+                                        "type": "string",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated"
+                    },
+                    "403": {
+                        "description": "Caller is not an admin"
+                    },
+                    "412": {
+                        "description": "If-Match did not match the resource's current ETag"
+                    },
+                    "422": {
+                        "description": "Validation failed, or no user with that id"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ]
+            }
+        },
+        "/users:delete": {
+            "post": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Delete a user (admin only)",
+                "description": "The target `id` travels in the body, not the URL. Returns 200 with a small confirmation body rather than a bare 204, so the deletion is visible and attributable in a Network trace.",
+                "operationId": "48f649c0a9b8339db1e4d3883899c340",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "id"
+                                ],
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "example": "8f14e45f-ceea-4d4b-9d2e-3b7a1c05f9a2"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Deleted"
+                    },
+                    "403": {
+                        "description": "Caller is not an admin, or is deleting themselves"
+                    },
+                    "422": {
+                        "description": "No user with that id"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "cookieAuth": {
+                "type": "apiKey",
+                "description": "HttpOnly JWT cookie set by POST /login. Never readable from JavaScript.",
+                "name": "jasindo_token",
+                "in": "cookie"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Dashboard",
+            "description": "Aggregate figures for the dashboard"
+        },
+        {
+            "name": "Users",
+            "description": "Cursor-paginated find/search, plus create, update and delete"
+        },
+        {
+            "name": "Auth",
+            "description": "Auth"
+        }
+    ]
+}

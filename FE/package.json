@@ -1,0 +1,27 @@
+{
+  "name": "jasindo-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "TestCase",
+    "Microfrontend/shared",
+    "Microfrontend/users",
+    "Microfrontend/auth"
+  ],
+  "scripts": {
+    "dev": "concurrently -n host,users,auth -c cyan,green,magenta \"npm:dev:host\" \"npm:dev:users\" \"npm:dev:auth\"",
+    "dev:host": "npm run dev -w host",
+    "dev:users": "npm run dev -w users-mfe",
+    "dev:auth": "npm run dev -w auth-mfe",
+    "build": "npm run build -w users-mfe && npm run build -w auth-mfe && npm run build -w host",
+    "preview": "concurrently -n host,users,auth -c cyan,green,magenta \"npm:preview:host\" \"npm:preview:users\" \"npm:preview:auth\"",
+    "preview:host": "npm run preview -w host",
+    "preview:users": "npm run preview -w users-mfe",
+    "preview:auth": "npm run preview -w auth-mfe",
+    "generate:theme": "node scripts/generate-m3-theme.mjs"
+  },
+  "devDependencies": {
+    "@material/material-color-utilities": "^0.2.7",
+    "concurrently": "^9.1.2"
+  }
+}
